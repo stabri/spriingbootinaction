@@ -1,5 +1,6 @@
 package com.ps.springbootinaction.configuration;
 
+import com.ps.springbootinaction.entities.Reader;
 import com.ps.springbootinaction.repositories.ReaderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
@@ -16,26 +17,27 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     private ReaderRepository readerRepository;
 
-    @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.authorizeRequests()
+        http
+                .authorizeRequests()
                 .antMatchers("/").access("hasRole('READER')")
                 .antMatchers("/**").permitAll()
                 .and()
                 .formLogin()
                 .loginPage("/login")
-                .failureUrl("login?error=true");
-
+                .failureUrl("/login?error=true");
     }
 
     @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+    protected void configure(
+            AuthenticationManagerBuilder auth) throws Exception {
         auth
-                .userDetailsService(new UserDetailsService() {
-                    @Override
-                    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-                        return readerRepository.findbyName(username);
+                .userDetailsService(username -> {
+                    UserDetails userDetails = readerRepository.findByUsername(username);
+                    if (userDetails != null) {
+                        return userDetails;
                     }
+                    throw new UsernameNotFoundException("User '" + username + "' not found.");
                 });
     }
 }
